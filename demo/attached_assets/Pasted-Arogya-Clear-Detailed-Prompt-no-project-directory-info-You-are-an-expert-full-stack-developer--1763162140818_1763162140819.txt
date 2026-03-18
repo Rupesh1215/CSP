@@ -1,0 +1,227 @@
+Arogya — Clear, Detailed Prompt (no project-directory info)
+
+You are an expert full-stack developer and architect. Read everything below carefully before you generate code. This prompt explains what Arogya is, how it should work, and which technologies to use.
+Do not invent or output any project directory tree or file paths — let Replit decide the file layout. Focus only on behavior, features, APIs, data, UI guidance, constraints, and technology choices.
+
+1) Purpose — what this project is for (short, blunt)
+
+Arogya is a lightweight village health-support web application that provides non-medical public-health information to villagers and lets authorized Sachivalayam staff update that information.
+It is not a diagnosis tool, not a prescription tool, and must never give personal medical advice. Its role is informational: vaccination schedules, health-camp details, government schemes, and restricted FAQ-style assistance about those topics.
+
+2) How it should work — end-to-end behavior (functional summary)
+
+Visitors (villagers) open the public website to:
+
+Read the latest vaccination schedules and age guidance.
+
+Browse upcoming and past health camps with date, time, location, type, and short description.
+
+Read summarized government health schemes and eligibility rules.
+
+Use a small chatbot-like FAQ assistant that can answer only questions about camps, schedules, and schemes (answers must come from stored data or deterministic templates).
+
+Sachivalayam staff (admins) authenticate and use a secure admin interface to:
+
+Create, edit, and remove camp entries, vaccine entries, and scheme entries.
+
+Publish announcements and mark a camp as active/cancelled.
+
+View basic logs of edits (who changed what and when).
+
+Backend acts as single source of truth:
+
+Serves public read endpoints for camps/vaccines/schemes.
+
+Serves protected admin endpoints requiring JWT authentication for create/update/delete operations.
+
+Contains a simple AI/FAQ endpoint that returns answers only by querying the stored data or returning fixed templates — never generates free-form medical advice.
+
+Chatbot/FAQ behavior constraints
+
+If a question is outside allowed scope (diagnosis, medicine, personal symptoms), the bot replies: “I cannot answer medical or personal health questions. Please contact a health professional or local clinic.”
+
+Bot answers must be traceable — each reply should include a reference to the database record(s) used (e.g., camp id / vaccine id) so the origin of information is clear.
+
+Security & privacy
+
+Admins authenticate via email+password; passwords are hashed.
+
+Admin routes protected by JWT with expiry.
+
+No personal medical data should be collected or stored.
+
+Rate-limit public API endpoints to prevent abuse.
+
+3) Technologies to use — exact stack and reasons
+
+Use modern, stable, easy-to-deploy technologies that Replit supports.
+
+Frontend
+
+React (latest stable) — component model, wide ecosystem.
+
+React Router — page routing (home, camps, vaccines, schemes, chatbot, admin).
+
+Axios — HTTP client for API calls.
+
+Context API (or lightweight state management) — manage auth state and global app state.
+
+Pure CSS (no Tailwind) — use plain CSS modules or CSS-in-JS (styled-components optional) to keep styling simple and portable.
+
+Accessibility basics — semantic HTML, forms with labels, keyboard focus.
+
+Why: React is universal on Replit, fast to build, and easy to deploy.
+
+Backend
+
+Node.js + Express — simple, ubiquitous, easy hosting.
+
+Mongoose (MongoDB ODM) or native MongoDB driver — interface with MongoDB.
+
+JWT (jsonwebtoken) for stateless admin auth.
+
+bcrypt for password hashing.
+
+helmet + cors middleware for basic security headers and cross-origin control.
+
+rate-limiter (express-rate-limit) for public endpoints.
+
+Why: quick to implement, scalable enough for this project, well-supported.
+
+Database
+
+MongoDB (Atlas or local) — document model fits camps/schemes/vaccine entries and flexible fields.
+
+Collections (conceptual): camps, vaccines, schemes, admins, logs (audit).
+
+Why: flexible schema for frequently changing public notices and suits JSON APIs.
+
+Optional small AI/FAQ component
+
+Use a deterministic rule-based responder in backend that matches user queries to DB entries (fuzzy text matching or simple keyword matching).
+
+If integrating an LLM, only use it as a controlled summarizer that is forced to reference DB entries; still enforce scope limits server-side.
+
+Store a short “allowedTopics” list and block anything outside it.
+
+Why: avoids unsafe medical advice generation while allowing helpful FAQ behavior.
+
+Dev & deployment
+
+Use environment variables for secrets (JWT secret, DB URI).
+
+Local development: run frontend on one port, backend on another; CORS enabled for the frontend origin.
+
+Deploy: Replit handles running both; for production prefer Vercel/Netlify (frontend) + Render/Railway/Atlas for backend & DB if scaling needed.
+
+4) API design and data behavior (what endpoints must do — not directory or file names)
+
+Provide RESTful endpoints with these behaviors (no implementation details required):
+
+Public (no auth)
+
+GET /api/camps — returns paginated list of camps with fields: title, date/time, location, type, description, status (active/cancelled), lastUpdated.
+
+GET /api/camps/:id — returns single camp details.
+
+GET /api/vaccines — returns list of vaccines: name, ageGroup, scheduleNotes, nextDose info.
+
+GET /api/schemes — returns list of schemes with eligibility and benefits.
+
+GET /api/search?q= — search across camps/vaccines/schemes (only public fields).
+
+POST /api/faq/query — accepts a short text query; backend returns an array of matched DB items or a templated refusal if outside scope. Each reply includes references to source IDs.
+
+Admin (protected by JWT)
+
+POST /api/admin/login — returns JWT token on valid credentials.
+
+POST /api/admin/camps — create a camp.
+
+PUT /api/admin/camps/:id — edit camp.
+
+DELETE /api/admin/camps/:id — delete or mark cancelled.
+
+Similar CRUD endpoints for vaccines and schemes.
+
+GET /api/admin/logs — returns recent admin actions (admin-only).
+
+Security behavior:
+
+Protected endpoints must validate JWT and admin role.
+
+All write endpoints create an audit log entry with admin id and timestamp.
+
+5) UI design notes (visual & UX guidance — keep it precise)
+
+Tone: clean, official, readable — think government info portal: calm blues, clear type, minimal flourishes.
+
+Layout: simple header with logo and primary nav; main content area shows cards or lists; admin tools on a compact dashboard with forms and tables.
+
+Typography: Roboto or system sans-serif; headings prominent (18–24px), body ~16px.
+
+Cards: white cards with subtle shadow, border-radius ~8px, consistent padding.
+
+Forms: inline validation messages; confirm modal before deleting.
+
+Chatbot UI: small chat window with history, message input, and visible “scope notice” (“I only answer about camps, vaccines, and schemes”).
+
+Mobile: responsive stacking; buttons large enough for touch.
+
+6) Implementation constraints & acceptance criteria (what counts as “done”)
+
+Public pages display live data from DB.
+
+Admin can authenticate and perform CRUD on camps/vaccines/schemes.
+
+Chatbot/FAQ only replies with data-backed answers and refuses medical/personal queries verbatim.
+
+All admin routes require JWT and reject expired/invalid tokens.
+
+Passwords are hashed and never returned to client.
+
+API responses include metadata indicating which DB records were used to compose any chatbot reply.
+
+Minimal error handling and user-friendly messages shown on frontend.
+
+Basic input validation on both frontend and backend.
+
+Rate-limiting applied to FAQ and public search endpoints.
+
+7) What to ask the user (if you need clarification; ask these in one batch)
+
+Ask these before generating code or scaffolding:
+
+Which deployment target do you prefer (Replit only, or Replit + external DB like Mongo Atlas)?
+
+Do you want the chatbot to support multiple languages or only one (English / local language)?
+
+Admin authentication: single shared admin account or multiple admin users with roles?
+
+Do you need email-based admin password reset flows?
+
+Are there any required fields for camps beyond title/date/location/description/type?
+
+Any specific local design language or government branding to apply (colors, logo)?
+
+Maximum expected concurrent users (to plan scaling; approximate).
+
+Do you want logging of public user queries saved (for analytics) or discarded for privacy?
+
+Will any media (images, PDFs) be attached to camp entries?
+
+Preferred data retention policy for old camps/announcements?
+
+Ask these all at once and wait for answers before building.
+
+8) Final rules (never deviate)
+
+Do not provide medical diagnosis or personal medical advice anywhere.
+
+Do not store or request personal medical information.
+
+All chatbot replies must either pull from DB entries or be an explicit refusal.
+
+Always include source references with chatbot responses.
+
+Keep styling simple and accessible (no Tailwind).
